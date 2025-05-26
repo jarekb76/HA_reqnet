@@ -1,131 +1,164 @@
+# /config/custom_components/reqnet/coordinator.py
 import logging
 from datetime import timedelta
-import json # Upewnij się, że ten import też jest
-import asyncio # DODAJ TĘ LINIĘ!
+import json
+import asyncio # Upewnij się, że ten import istnieje
 
-import async_timeout
+# Usunięto import async_timeout, jeśli nie jest używany nigdzie indziej
+# import async_timeout 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.components import mqtt
+from homeassistant.components import mqtt # Kluczowy import dla MQTT
 
 _LOGGER = logging.getLogger(__name__)
 
 # Częstotliwość odpytywania rekuperatora (np. co 30 sekund)
-UPDATE_INTERVAL = timedelta(seconds=30)
+UPDATE_INTERVAL = timedelta(seconds=30) # Możesz dostosować
 
 class ReqnetDataCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching Reqnet data."""
+    """Zarządza pobieraniem danych Reqnet przez MQTT."""
 
     def __init__(self, hass: HomeAssistant, mac_address: str):
-        """Initialize."""
-        self.mac_address = mac_address
-        self.request_topic = f"{self.mac_address}/CurrentWorkParameters"
-        self.response_topic = f"{self.mac_address}/CurrentWorkParametersResult"
-        self.data = None
-        self.unsub_mqtt = None
+        """Inicjalizacja."""
+        self.hass = hass # <<< WAŻNE: Zapisz instancję hass
+        self.mac_address = mac_address.replace(":", "").upper() # Upewnij się, że format MAC jest spójny
+        
+        # Tematy dla CurrentWorkParameters
+        self.request_cwp_topic = f"{self.mac_address}/CurrentWorkParameters"
+        self.response_cwp_topic = f"{self.mac_address}/CurrentWorkParametersResult"
+        
+        # Tematy dla AutomaticMode
+        self.command_am_topic = f"{self.mac_address}/AutomaticMode"
+        self.response_am_topic = f"{self.mac_address}/AutomaticModeResult" # Do ewentualnego nasłuchu/logowania wyniku
+
+        self.data = None # Przechowuje ostatnie 'Values' z CurrentWorkParameters
+        self._unsub_cwp = None # Funkcja do anulowania subskrypcji CurrentWorkParametersResult
+        self._unsub_am_result = None # Opcjonalna funkcja do anulowania subskrypcji AutomaticModeResult
 
         super().__init__(
             hass,
             _LOGGER,
-            name="Reqnet Data",
+            name=f"Reqnet Data ({self.mac_address})", # Lepsza nazwa dla logowania
             update_interval=UPDATE_INTERVAL,
         )
 
-    async def _async_update_data(self):
-        """Fetch data from Reqnet."""
-        _LOGGER.debug(f"Requesting data from Reqnet at topic: {self.request_topic}")
+    async def _handle_mqtt_message(self, msg):
+        """Obsługuje nowe wiadomości MQTT z subskrybowanych tematów."""
+        _LOGGER.debug(f"Otrzymano wiadomość MQTT na temacie '{msg.topic}': {msg.payload}")
+        payload_str = ""
         try:
-            await mqtt.async_publish(self.hass, self.request_topic, "")
+            payload_str = msg.payload.decode('utf-8') if isinstance(msg.payload, bytes) else str(msg.payload)
+            data = json.loads(payload_str)
 
-            if not self.unsub_mqtt:
-                self.unsub_mqtt = await mqtt.async_subscribe(
-                    self.hass,
-                    self.response_topic,
-                    self._mqtt_message_received,
-                    1
-                )
-
-            # Czekamy na dane, które zostaną ustawione przez _mqtt_message_received
-            # Możemy dodać licznik prób, żeby nie czekać w nieskończoność, jeśli rekuperator nie odpowie
-            attempts = 0
-            while self.data is None and attempts < 20: # Czekamy max 10 sekund (20*0.5s)
-                await asyncio.sleep(0.5)
-                attempts += 1
-
-            if self.data is None:
-                raise asyncio.TimeoutError("No data received from Reqnet via MQTT after multiple attempts.")
-
-            current_data = self.data
-            self.data = None # Reset na następny cykl
-            return current_data
-
-        except asyncio.TimeoutError:
-            _LOGGER.error(f"Timeout awaiting MQTT response from Reqnet on topic {self.response_topic}")
-            raise UpdateFailed("Timeout fetching Reqnet data")
-        except Exception as err:
-            _LOGGER.error(f"Error fetching Reqnet data: {err}")
-            raise UpdateFailed(f"Error fetching Reqnet data: {err}")
-            
-            
-    async def async_set_automatic_mode(self) -> bool:
-        """Wywołuje funkcję API AutomaticMode na urządzeniu."""
-        if not self.host or not hasattr(self, 'websession'):
-            _LOGGER.error("Koordynator nie ma skonfigurowanego hosta lub sesji webowej do wysyłania poleceń.")
-            return False
-
-        # Zgodnie z dokumentacją API, używamy metody HTTP GET
-        url = f"http://{self.host}/API/RunFunction?name=AutomaticMode"
-        _LOGGER.debug(f"Wywoływanie AutomaticMode przez HTTP: {url}")
-
-        try:
-            async with async_timeout.timeout(10): # Timeout po 10 sekundach
-                response = await self.websession.get(url)
-                # Sprawdź, czy odpowiedź jest poprawna (status 2xx)
-                response.raise_for_status()
-                data = await response.json()
-                _LOGGER.debug(f"Odpowiedź z AutomaticMode: {data}")
-
-                if data.get("AutomaticModeResult") is True:
-                    _LOGGER.info("Pomyślnie włączono tryb inteligentny (Automatic Mode).")
-                    # Opcjonalnie, możesz wymusić odświeżenie danych sensorów,
-                    # jeśli włączenie tego trybu natychmiast zmienia jakieś stany.
-                    await self.async_request_refresh()
-                    return True
+            # Obsługa odpowiedzi dla CurrentWorkParametersResult
+            if msg.topic == self.response_cwp_topic:
+                if data.get("CurrentWorkParametersResult") is True and "Values" in data:
+                    _LOGGER.debug(f"Przetworzone dane z {self.response_cwp_topic}: {data['Values']}")
+                    # Zaktualizuj self.data i powiadom Home Assistant
+                    self.async_set_updated_data(data["Values"]) 
                 else:
-                    error_message = data.get("Message", "Nieznany błąd")
-                    _LOGGER.error(f"Nie udało się włączyć trybu inteligentnego: {error_message}")
-                    return False
-        except aiohttp.ClientError as err:
-            _LOGGER.error(f"Błąd komunikacji API podczas wywoływania AutomaticMode: {err}")
-            return False
-        except async_timeout.TimeoutError:
-            _LOGGER.error("Timeout podczas wywoływania AutomaticMode API.")
-            return False
-        except Exception as e: # Ogólny wyjątek dla nieoczekiwanych błędów
-            _LOGGER.error(f"Nieoczekiwany błąd podczas wywoływania AutomaticMode: {e}")
-            return False
-    async def _mqtt_message_received(self, msg):
-        """Handle incoming MQTT messages."""
-        try:
-            if not msg.payload:
-                _LOGGER.warning(f"Received empty MQTT payload on {msg.topic}")
-                return
+                    message = data.get("Message", "Brak wartości 'Values' lub wynik negatywny")
+                    _LOGGER.error(f"Błąd w danych z {self.response_cwp_topic}: {message}")
+                    # Można by rozważyć rzucenie UpdateFailed, jeśli błąd jest krytyczny dla sensorów
+                    # self.async_set_updated_data(None) # Lub ustaw dane na None, aby sensory pokazały niedostępność
 
-            payload_json = json.loads(msg.payload)
-            if not payload_json.get("CurrentWorkParametersResult") or "Values" not in payload_json:
-                _LOGGER.warning(f"Unexpected JSON structure from Reqnet: {payload_json}")
-                return
-
-            self.data = payload_json["Values"]
-            _LOGGER.debug(f"Received data from Reqnet: {self.data}")
+            # Opcjonalna obsługa odpowiedzi dla AutomaticModeResult (do logowania)
+            elif msg.topic == self.response_am_topic:
+                if data.get("AutomaticModeResult") is True:
+                    _LOGGER.info(f"Potwierdzenie ({self.response_am_topic}): Tryb automatyczny włączony. Wiadomość: {data.get('Message', '')}")
+                else:
+                    _LOGGER.warning(f"Potwierdzenie ({self.response_am_topic}): Nie udało się włączyć trybu automatycznego. Wiadomość: {data.get('Message', 'Brak wiadomości')}")
+            else:
+                _LOGGER.warning(f"Otrzymano wiadomość na nieobsługiwanym temacie MQTT: {msg.topic}")
 
         except json.JSONDecodeError:
-            _LOGGER.error(f"Failed to decode JSON from MQTT message on {msg.topic}. Payload: {msg.payload}")
+            _LOGGER.error(f"Błąd dekodowania JSON z tematu {msg.topic}: {payload_str}")
         except Exception as e:
-            _LOGGER.error(f"Error processing MQTT message: {e}")
+            _LOGGER.exception(f"Nieoczekiwany błąd podczas przetwarzania wiadomości MQTT z {msg.topic}: {e}")
+
+
+    async def _async_update_data(self):
+        """Pobiera dane z Reqnet przez MQTT (wysyła żądanie)."""
+        _LOGGER.debug(f"Żądanie danych (CurrentWorkParameters) z Reqnet na temat: {self.request_cwp_topic}")
+        
+        # Zasubskrybuj temat odpowiedzi CurrentWorkParametersResult, jeśli jeszcze nie jest
+        if not self._unsub_cwp:
+            try:
+                self._unsub_cwp = await mqtt.async_subscribe(
+                    self.hass,
+                    self.response_cwp_topic,
+                    self._handle_mqtt_message, # Użyj wspólnego handlera
+                    qos=0 # Dostosuj qos jeśli potrzebujesz
+                )
+                _LOGGER.debug(f"Zasubskrybowano temat: {self.response_cwp_topic}")
+            except Exception as e:
+                _LOGGER.error(f"Nie udało się zasubskrybować tematu {self.response_cwp_topic}: {e}")
+                raise UpdateFailed(f"Nie udało się zasubskrybować tematu MQTT: {e}")
+
+        # Opcjonalnie: Zasubskrybuj temat odpowiedzi AutomaticModeResult do logowania
+        # Robimy to tutaj, aby upewnić się, że subskrypcja jest aktywna, gdyby była potrzebna
+        if not self._unsub_am_result:
+            try:
+                self._unsub_am_result = await mqtt.async_subscribe(
+                    self.hass,
+                    self.response_am_topic,
+                    self._handle_mqtt_message, # Użyj wspólnego handlera
+                    qos=0
+                )
+                _LOGGER.debug(f"Zasubskrybowano temat: {self.response_am_topic}")
+            except Exception as e:
+                _LOGGER.warning(f"Nie udało się zasubskrybować tematu {self.response_am_topic}: {e}")
+                # To nie jest krytyczne dla aktualizacji danych sensorów, więc tylko ostrzeżenie
+
+        # Wyślij żądanie danych
+        try:
+            await mqtt.async_publish(self.hass, self.request_cwp_topic, "", qos=0, retain=False)
+            _LOGGER.debug(f"Wysłano żądanie na {self.request_cwp_topic}")
+            # Dane zostaną zaktualizowane w _handle_mqtt_message po otrzymaniu odpowiedzi
+            # DataUpdateCoordinator oczekuje, że _async_update_data zwróci dane lub rzuci UpdateFailed
+            # W tym modelu (żądanie-odpowiedź MQTT), bezpośrednie zwracanie danych tutaj jest trudne.
+            # Zamiast tego, _handle_mqtt_message wywoła self.async_set_updated_data().
+            # Aby uniknąć timeoutu w DataUpdateCoordinator, jeśli odpowiedź nie przyjdzie szybko,
+            # można zwrócić ostatnio znane dane lub poczekać na odpowiedź z timeoutem.
+            # Na razie, zakładamy, że aktualizacja nastąpi asynchronicznie.
+            # Jeśli self.data nie jest None, zwróć je, aby uniknąć błędu "no data" przy pierwszym odświeżeniu po restarcie HA.
+            return self.data # Zwróć ostatnio znane dane lub None, jeśli jeszcze ich nie ma
+        except Exception as e:
+            _LOGGER.error(f"Nie udało się wysłać żądania na {self.request_cwp_topic}: {e}")
+            raise UpdateFailed(f"Nie udało się wysłać żądania MQTT: {e}")
+
+    async def async_set_automatic_mode(self) -> bool:
+        """Wysyła polecenie włączenia trybu inteligentnego (AutomaticMode) przez MQTT."""
+        _LOGGER.info(f"Wysyłanie polecenia AutomaticMode na temat MQTT: {self.command_am_topic}")
+        try:
+            await mqtt.async_publish(
+                self.hass,
+                self.command_am_topic,
+                "", # Pusty payload
+                qos=0, # Dostosuj qos
+                retain=False
+            )
+            _LOGGER.info(f"Polecenie AutomaticMode wysłane pomyślnie na temat {self.command_am_topic}.")
+            # Wynik przyjdzie na self.response_am_topic i zostanie obsłużony w _handle_mqtt_message (jeśli zasubskrybowany)
+            
+            # Możesz rozważyć krótkie opóźnienie i wymuszenie odświeżenia danych,
+            # aby sensory mogły odzwierciedlić zmianę trybu.
+            await asyncio.sleep(1) # Daj urządzeniu chwilę na przetworzenie polecenia
+            await self.async_request_refresh() # Poproś o odświeżenie danych sensorów
+
+            return True # Sukces wysłania polecenia
+        except Exception as e:
+            _LOGGER.exception(f"Błąd podczas wysyłania polecenia AutomaticMode przez MQTT: {e}")
+            return False
 
     async def async_shutdown(self):
-        """Unsubscribe from MQTT on shutdown."""
-        if self.unsub_mqtt:
-            self.unsub_mqtt()
-            self.unsub_mqtt = None
+        """Anuluje subskrypcje MQTT przy zamykaniu."""
+        _LOGGER.debug("Anulowanie subskrypcji MQTT dla Reqnet.")
+        if self._unsub_cwp:
+            self._unsub_cwp()
+            self._unsub_cwp = None
+            _LOGGER.debug(f"Anulowano subskrypcję tematu: {self.response_cwp_topic}")
+        if self._unsub_am_result:
+            self._unsub_am_result()
+            self._unsub_am_result = None
+            _LOGGER.debug(f"Anulowano subskrypcję tematu: {self.response_am_topic}")
