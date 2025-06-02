@@ -122,7 +122,8 @@ async def async_setup_entry(
 
 
 class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
-    # ... (reszta klasy) ...
+    _attr_has_entity_name = True # Ustawia, jeśli chcesz, aby nazwa urządzenia była częścią nazwy sensora
+    
 
     def __init__(
         self,
@@ -138,9 +139,11 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
         super().__init__(coordinator)
         self._index = index
 
+        display_name = f"Reqnet {name_suffix}"
+
         self.entity_description = SensorEntityDescription(
             key=f"value_{self._index}",
-            name=name_suffix,
+            name=display_name,
             icon=icon,
             native_unit_of_measurement=unit,
             device_class=device_class,
@@ -162,7 +165,9 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
         # Przykład dynamicznego ustawiania modelu, jeśli dane są już dostępne:
         # if coordinator.data and len(coordinator.data) > 15 and coordinator.data[15] is not None:
         #     self._attr_device_info["model"] = f"Recuperator Model {coordinator.data[15]}"
-
+        
+        # Informacje o urządzeniu (wspólne dla wszystkich sensorów tego urządzenia)
+        
 
     @property
     def native_value(self):

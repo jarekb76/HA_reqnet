@@ -32,7 +32,7 @@ async def async_setup_entry(
 
 class ReqnetBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Representation of a Reqnet Binary Sensor."""
-
+    _attr_has_entity_name = True
     def __init__(
         self,
         coordinator: ReqnetDataCoordinator,
@@ -52,13 +52,8 @@ class ReqnetBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_name = name
 
         # Powiąż encję z urządzeniem (rekuperatorem)
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.mac_address)},
-            "name": f"Reqnet Recuperator ({coordinator.mac_address})",
-            "manufacturer": "Reqnet",
-            "model": "Recuperator (WiFi v113)",
-            "via_device": (DOMAIN, coordinator.mac_address),
-        }
+        
+        #}
 
     @property
     def is_on(self) -> bool | None:

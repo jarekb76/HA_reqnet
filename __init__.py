@@ -53,8 +53,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    _LOGGER.info("INIT.PY: Przed wywołaniem async_forward_entry_setups dla platform: %s", PLATFORMS) # KLUCZOWY LOG
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+    _LOGGER.info("INIT.PY: Po wywołaniu async_forward_entry_setups") # KLUCZOWY LOG
+
+
+        
     return True
 
 
