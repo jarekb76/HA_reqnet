@@ -1,2 +1,3 @@
 # reqnet
-Integration for Reqnet recuperators
+
+Home Assistant integration for Reqnet recuperators
