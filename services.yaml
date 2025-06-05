@@ -1,0 +1,31 @@
+# /config/custom_components/reqnet/services.yaml
+set_manual_mode:
+  name: "Ustaw tryb ręczny"
+  description: "Ustawia tryb ręczny z określonymi wartościami nawiewu i wyciągu"
+  fields:
+    device_id:
+      name: "ID urządzenia"
+      description: "ID urządzenia Reqnet (MAC address)"
+      required: true
+      selector:
+        text:
+    airflow_value:
+      name: "Wartość nawiewu"
+      description: "Zadana wartość nawiewu (m³/h)"
+      required: true
+      default: 200
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 10
+    air_extraction_value:
+      name: "Wartość wyciągu"
+      description: "Zadana wartość wyciągu (m³/h)"  
+      required: true
+      default: 200
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 10
