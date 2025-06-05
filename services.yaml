@@ -17,7 +17,7 @@ set_manual_mode:
       selector:
         number:
           min: 0
-          max: 1000
+          max: 350
           step: 10
     air_extraction_value:
       name: "Wartość wyciągu"
@@ -27,5 +27,5 @@ set_manual_mode:
       selector:
         number:
           min: 0
-          max: 1000
+          max: 350
           step: 10
