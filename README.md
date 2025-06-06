@@ -81,6 +81,9 @@ data:
   airflow_value: 300
   air_extraction_value: 280
 ```
+# Wsparcie
+
+Jeżeli podoba Ci się ten projekt, proszę kliknij gwiazdkę na [GitHub](https://github.com/jarekb76/reqnet) lub wesprzyj na [Sponsor](https://github.com/sponsors/jarekb76).
 
 # Reqnet Recuperator - Installation Guide
 
@@ -161,3 +164,7 @@ data:
   airflow_value: 300
   air_extraction_value: 280
 ```
+
+# Showing Your Appreciation
+
+If you like this project, please give it a star on [GitHub](https://github.com/jarekb76/reqnet) or consider becoming a [Sponsor](https://github.com/sponsors/jarekb76).
