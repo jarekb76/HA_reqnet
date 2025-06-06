@@ -16,6 +16,10 @@ import homeassistant.helpers.config_validation as cv
 from .const import DOMAIN
 from .coordinator import ReqnetDataCoordinator
 
+# Dodaj tę linię po imporcie const.py, około linii 17-18:
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["sensor", "binary_sensor", "button"]
