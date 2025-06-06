@@ -1,4 +1,5 @@
 {
   "name": "reqnet",
-  "content_in_root": true
+  "render_readme": true,
+  "country": "PL"
 }  
