@@ -5,7 +5,7 @@
   "codeowners": ["@jarekb76"],
   "config_flow": true,
   "dependencies": ["mqtt"],
-  "documentation": "https://github.com/jarekb76/reqnet/blob/main/README.md",
-  "issue_tracker": "https://github.com/jarekb76/reqnet/issues",
+  "documentation": "https://github.com/jarekb76/HA_reqnet",
+  "issue_tracker": "https://github.com/jarekb76/HA_reqnet/issues",
   "requirements": []
 }
