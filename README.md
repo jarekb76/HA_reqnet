@@ -47,18 +47,18 @@ Jeśli `ChangeAdditionalBrokerConfigurationResult` jest `true`, konfiguracja zos
 
 ## Krok 2: Instalacja integracji w Home Assistant
 
-### Przez HACS (jeszcze nie dziala)
+### Przez HACS 
 
 1. Otwórz HACS w Home Assistant
 2. Przejdź do zakładki **Integrations**
 3. Kliknij **Explore & Download Repositories**
-4. Wyszukaj "Reqnet Recuperator"
+4. Wyszukaj "Reqnet"
 5. Kliknij **Download**
 6. Zrestartuj Home Assistant
 
 ### Instalacja ręczna
 
-1. Pobierz najnowszą wersję z [GitHub](https://github.com/jarekb76/reqnet)
+1. Pobierz najnowszą wersję z [GitHub](https://github.com/jarekb76/HA_reqnet)
 2. Skopiuj folder `custom_components/reqnet` do katalogu `custom_components` w Home Assistant
 3. Zrestartuj Home Assistant
 
@@ -83,7 +83,7 @@ data:
 ```
 # Wsparcie
 
-Jeżeli podoba Ci się ten projekt, proszę kliknij gwiazdkę na [GitHub](https://github.com/jarekb76/reqnet) lub wesprzyj na [Sponsor](https://github.com/sponsors/jarekb76).
+Jeżeli podoba Ci się ten projekt, proszę kliknij gwiazdkę na [GitHub](https://github.com/jarekb76/HA_reqnet) lub wesprzyj na [Sponsor](https://github.com/sponsors/jarekb76).
 
 # Reqnet Recuperator - Installation Guide
 
@@ -132,7 +132,7 @@ If `ChangeAdditionalBrokerConfigurationResult` is `true`, the configuration has 
 
 ## Step 2: Install the integration in Home Assistant
 
-### Via HACS (not working yet)
+### Via HACS 
 
 1. Open HACS in Home Assistant
 2. Go to the **Integrations** tab
@@ -143,7 +143,7 @@ If `ChangeAdditionalBrokerConfigurationResult` is `true`, the configuration has 
 
 ### Manual installation
 
-1. Download the latest version from [GitHub](https://github.com/jarekb76/reqnet)
+1. Download the latest version from [GitHub](https://github.com/jarekb76/HA_reqnet)
 2. Copy the `custom_components/reqnet` folder to the `custom_components` directory in Home Assistant
 3. Restart Home Assistant
 
@@ -167,4 +167,4 @@ data:
 
 # Showing Your Appreciation
 
-If you like this project, please give it a star on [GitHub](https://github.com/jarekb76/reqnet) or consider becoming a [Sponsor](https://github.com/sponsors/jarekb76).
+If you like this project, please give it a star on [GitHub](https://github.com/jarekb76/HA_reqnet) or consider becoming a [Sponsor](https://github.com/sponsors/jarekb76).
