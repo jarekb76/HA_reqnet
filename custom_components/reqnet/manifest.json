@@ -1,6 +1,6 @@
 {
   "domain": "reqnet",
-  "name": "reqnet",
+  "name": "Reqnet",
   "version": "v0.0.0",
   "codeowners": ["@jarekb76"],
   "config_flow": true,
