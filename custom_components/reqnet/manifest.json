@@ -1,11 +1,11 @@
 {
   "domain": "reqnet",
-  "name": "Reqnet Recuperator",
+  "name": "Reqnet",
   "version": "1.0.0",
   "codeowners": ["@jarekb76"],
   "config_flow": true,
   "dependencies": ["mqtt"],
-  "documentation": "https://github.com/jarekb76/reqnet-homeassistant/blob/main/README.md",
-  "issue_tracker": "https://github.com/jarekb76/reqnet-homeassistant/issues",
+  "documentation": "https://github.com/jarekb76/reqnet/blob/main/README.md",
+  "issue_tracker": "https://github.com/jarekb76/reqnet/issues",
   "requirements": []
 }
