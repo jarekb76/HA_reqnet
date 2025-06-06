@@ -1,7 +1,7 @@
 {
   "domain": "reqnet",
-  "name": "Reqnet",
-  "version": "1.0.0",
+  "name": "reqnet",
+  "version": "v1.0.0",
   "codeowners": ["@jarekb76"],
   "config_flow": true,
   "dependencies": ["mqtt"],
