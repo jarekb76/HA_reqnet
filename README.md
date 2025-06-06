@@ -82,64 +82,82 @@ data:
   air_extraction_value: 280
 ```
 
-Reqnet Recuperator - Installation Guide
-Prerequisites
+# Reqnet Recuperator - Installation Guide
 
-Home Assistant with working MQTT broker
-Reqnet recuperator with WiFi module version 0 or newer
-Network connection between Home Assistant and the recuperator
+## Prerequisites
 
-Step 1: Configure additional MQTT broker in the recuperator
+- Home Assistant with working MQTT broker
+- Reqnet recuperator with WiFi module version 0 or newer
+- Network connection between Home Assistant and the recuperator
+
+## Step 1: Configure additional MQTT broker in the recuperator
+
 Before installing the integration, you need to configure the recuperator to connect to the Home Assistant MQTT broker.
-Configuration via web browser
 
-Find the recuperator's IP address in your local network (e.g., 192.168.7.1)
-Open your web browser and paste the following URL, replacing the appropriate values:
+### Configuration via web browser
 
+1. **Find the recuperator's IP address in your local network** (e.g., 192.168.7.1)
+
+2. **Open your web browser** and paste the following URL, replacing the appropriate values:
+
+```
 http://RECUPERATOR_IP/API/RunFunction?name=ChangeAdditionalBrokerConfiguration&MQTT_ADDITIONAL_BROKER_ADDRESS=192.168.1.100&MQTT_ADDITIONAL_BROKER_PORT=1883&MQTT_ADDITIONAL_BROKER_USER=homeassistant&MQTT_ADDITIONAL_BROKER_PASSWORD=your_mqtt_password
-Example with actual values:
+```
+
+**Example with actual values:**
+```
 http://192.168.7.1/API/RunFunction?name=ChangeAdditionalBrokerConfiguration&MQTT_ADDITIONAL_BROKER_ADDRESS=192.168.1.100&MQTT_ADDITIONAL_BROKER_PORT=1883&MQTT_ADDITIONAL_BROKER_USER=homeassistant&MQTT_ADDITIONAL_BROKER_PASSWORD=mypassword123
-Replace:
+```
 
-192.168.7.1 - with your recuperator's actual IP address
-192.168.1.100 - with your Home Assistant's IP address with MQTT broker
-homeassistant - with your MQTT username in HA
-mypassword123 - with your MQTT user password
+**Replace:**
+- `192.168.7.1` - with your recuperator's actual IP address
+- `192.168.1.100` - with your Home Assistant's IP address with MQTT broker
+- `homeassistant` - with your MQTT username in HA
+- `mypassword123` - with your MQTT user password
 
-Configuration verification
+### Configuration verification
+
 After sending the command, you should receive a response:
-json{
+```json
+{
   "ChangeAdditionalBrokerConfigurationResult": true,
   "Message": ""
 }
-If ChangeAdditionalBrokerConfigurationResult is true, the configuration has been saved successfully.
-Step 2: Install the integration in Home Assistant
-Via HACS (not working yet)
+```
 
-Open HACS in Home Assistant
-Go to the Integrations tab
-Click Explore & Download Repositories
-Search for "Reqnet Recuperator"
-Click Download
-Restart Home Assistant
+If `ChangeAdditionalBrokerConfigurationResult` is `true`, the configuration has been saved successfully.
 
-Manual installation
+## Step 2: Install the integration in Home Assistant
 
-Download the latest version from GitHub
-Copy the custom_components/reqnet folder to the custom_components directory in Home Assistant
-Restart Home Assistant
+### Via HACS (not working yet)
 
-Step 3: Configure the integration
+1. Open HACS in Home Assistant
+2. Go to the **Integrations** tab
+3. Click **Explore & Download Repositories**
+4. Search for "Reqnet Recuperator"
+5. Click **Download**
+6. Restart Home Assistant
 
-Go to Settings → Devices & Services
-Click Add Integration
-Search for "Reqnet Recuperator"
-Enter the IP Address of the recuperator (e.g., 192.168.7.1)
+### Manual installation
 
-Service usage example
-yaml# Set manual mode with airflow 300 and air extraction 280
+1. Download the latest version from [GitHub](https://github.com/jarekb76/reqnet)
+2. Copy the `custom_components/reqnet` folder to the `custom_components` directory in Home Assistant
+3. Restart Home Assistant
+
+## Step 3: Configure the integration
+
+1. Go to **Settings** → **Devices & Services**
+2. Click **Add Integration**
+3. Search for "Reqnet Recuperator"
+4. Enter the **IP Address** of the recuperator (e.g., 192.168.7.1)
+
+## Service usage example
+
+```yaml
+# Set manual mode with airflow 300 and air extraction 280
 service: reqnet.set_manual_mode
 data:
   device_id: "ABCDEF123456"  # MAC address without colons
   airflow_value: 300
   air_extraction_value: 280
+```
