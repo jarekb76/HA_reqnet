@@ -23,7 +23,7 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-          # ignore: "wheels,zip"  # Opcjonalnie ignoruj określone błędy
+          ignore: "brands"  # Opcjonalnie ignoruj określone błędy
 
       - name: Hassfest validation
         uses: home-assistant/actions/hassfest@master
