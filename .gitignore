@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Development scripts - lokalne, nie dla repo
+deploy-to-ha.sh
+sync-*.sh
+test-*.sh
+
+# Personal config files
+.env
+secrets.yaml
