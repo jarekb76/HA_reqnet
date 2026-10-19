@@ -1,16 +1,13 @@
 # /config/custom_components/reqnet/__init__.py
 """The Reqnet Recuperator integration."""
-import asyncio
 import logging
-import json
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.const import CONF_MAC, CONF_HOST
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.const import CONF_MAC, CONF_HOST, Platform
 import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN
@@ -22,7 +19,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["sensor", "binary_sensor", "button"]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
 
 # Definicja schematu dla serwisu
 SERVICE_SET_MANUAL_MODE_SCHEMA = vol.Schema({
@@ -33,7 +30,6 @@ SERVICE_SET_MANUAL_MODE_SCHEMA = vol.Schema({
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Reqnet Recuperator from a configuration entry."""
-    hass.data.setdefault(DOMAIN, {})
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -58,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.error(f"Failed to fetch initial data for Reqnet device {mac_address} (Host: {host}): {ex}")
         raise ConfigEntryNotReady(f"Failed to connect to Reqnet device: {ex}") from ex
 
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
 
     _LOGGER.info("INIT.PY: Przed wywołaniem async_forward_entry_setups dla platform: %s", PLATFORMS)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -75,16 +71,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         
         # Znajdź odpowiedni koordynator
         target_coordinator = None
-        for entry_id, coord in hass.data[DOMAIN].items():
-            if isinstance(coord, ReqnetDataCoordinator):
-                # Porównaj MAC address (bez dwukropków, uppercase)
-                if coord.mac_address == device_id.replace(":", "").upper():
-                    target_coordinator = coord
-                    break
-                # Porównaj też z oryginalnym formatem
-                elif coord.mac_for_mqtt_topics == device_id.upper():
-                    target_coordinator = coord
-                    break
+        for config_entry in hass.config_entries.async_entries(DOMAIN):
+            if config_entry.state is not ConfigEntryState.LOADED:
+                continue
+            coord = config_entry.runtime_data
+            # Porównaj MAC address (bez dwukropków, uppercase)
+            if coord.mac_address == device_id.replace(":", "").upper():
+                target_coordinator = coord
+                break
+            # Porównaj też z oryginalnym formatem
+            if coord.mac_for_mqtt_topics == device_id.upper():
+                target_coordinator = coord
+                break
         
         if not target_coordinator:
             _LOGGER.error(f"Nie znaleziono urządzenia o ID: {device_id}")
@@ -115,17 +113,20 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.debug("Unloading Reqnet integration from config entry")
 
-    coordinator = hass.data[DOMAIN].get(entry.entry_id)
-    if coordinator:
-        await coordinator.async_shutdown()
-
-    unload_ok = await hass.config_entries.async_forward_entry_unloads(entry, PLATFORMS)
+    coordinator = entry.runtime_data
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        await coordinator.async_shutdown()
         
         # Usuń serwis jeśli to był ostatni entry
-        if not hass.data[DOMAIN]:
+        other_entries = (
+            config_entry
+            for config_entry in hass.config_entries.async_entries(DOMAIN)
+            if config_entry.entry_id != entry.entry_id
+            and config_entry.state is ConfigEntryState.LOADED
+        )
+        if not any(other_entries):
             if hass.services.has_service(DOMAIN, "set_manual_mode"):
                 hass.services.async_remove(DOMAIN, "set_manual_mode")
                 _LOGGER.info("Usunięto serwis reqnet.set_manual_mode")

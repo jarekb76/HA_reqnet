@@ -1,26 +1,25 @@
 """Platform for binary_sensor integration."""
 from __future__ import annotations
 
-import logging
-
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
 from .coordinator import ReqnetDataCoordinator
 
-_LOGGER = logging.getLogger(__name__)
-
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    _hass: HomeAssistant,
+    config_entry: ConfigEntry[ReqnetDataCoordinator],
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Reqnet binary sensor platform."""
-    coordinator: ReqnetDataCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    del _hass
+    coordinator: ReqnetDataCoordinator = config_entry.runtime_data
 
     binary_sensors = [
         # Indeks 0: Status urządzenia (1 - włączone, 0 - wyłączone)
@@ -30,9 +29,12 @@ async def async_setup_entry(
     async_add_entities(binary_sensors)
 
 
-class ReqnetBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class ReqnetBinarySensor(
+    CoordinatorEntity[ReqnetDataCoordinator], BinarySensorEntity
+):
     """Representation of a Reqnet Binary Sensor."""
     _attr_has_entity_name = True
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
     def __init__(
         self,
         coordinator: ReqnetDataCoordinator,
@@ -50,10 +52,7 @@ class ReqnetBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
         self._attr_unique_id = f"{coordinator.mac_address.replace(':', '').lower()}_{name.lower().replace(' ', '_')}"
         self._attr_name = name
-
-        # Powiąż encję z urządzeniem (rekuperatorem)
-        
-        #}
+        self._attr_device_info = coordinator.device_info
 
     @property
     def is_on(self) -> bool | None:

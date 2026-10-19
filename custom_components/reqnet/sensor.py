@@ -1,47 +1,45 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
-import logging
-
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
-    SensorDeviceClass, # Upewnij się, że jest importowane
+    SensorDeviceClass,
+    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.const import (
     UnitOfTemperature,
-    PERCENTAGE,
-    CONCENTRATION_PARTS_PER_MILLION,
+    UnitOfRatio,
     UnitOfPower,
-    UnitOfPressure, # Dodane dla ciśnienia/oporu
+    UnitOfPressure,
+    UnitOfTime,
+    UnitOfVolumeFlowRate,
 )
 # Upewnij się, że DOMAIN i ReqnetDataCoordinator są poprawnie zdefiniowane/importowane
 from .const import DOMAIN # Zakładam, że DOMAIN jest zdefiniowany w .const
 from .coordinator import ReqnetDataCoordinator # Zakładam, że koordynator jest w .coordinator
 
-_LOGGER = logging.getLogger(__name__)
-
 # Definicje sensorów:
 # (index_python (API_Index - 1), nazwa_przyrostka, jednostka, ikona, klasa_urządzenia, kategoria_encji)
-SENSOR_DEFINITIONS: list[tuple[int, str, str | None, str | None, SensorDeviceClass | None, str | None]] = [
+SENSOR_DEFINITIONS: list[tuple[int, str, str | None, str | None, SensorDeviceClass | None, EntityCategory | None]] = [
     # --- Podstawowe odczyty ---
-    (0, "Status urządzenia", None, "mdi:power", None, None), # API Index 1
-    (1, "Maksymalna wartość nawiewu", "m³/h", "mdi:fan-plus", None, None), # API Index 2
+    (0, "Status urządzenia", None, "mdi:power", SensorDeviceClass.ENUM, None), # API Index 1
+    (1, "Maksymalna wartość nawiewu", UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR, "mdi:fan-plus", SensorDeviceClass.VOLUME_FLOW_RATE, None), # API Index 2
     (2, "Aktualna temperatura", UnitOfTemperature.CELSIUS, "mdi:thermometer", SensorDeviceClass.TEMPERATURE, None), # API Index 3
-    (3, "Aktualna wartość nawiewu", "m³/h", "mdi:fan", None, None), # API Index 4
-    (4, "Aktualna wartość wyciągu", "m³/h", "mdi:fan-off", None, None), # API Index 5
-    (5, "Nawiew tryb ręczny", "m³/h", "mdi:fan-settings", None, None), # API Index 6
-    (6, "Wyciąg tryb ręczny", "m³/h", "mdi:fan-settings", None, None), # API Index 7
-    (7, "Wilgotność", PERCENTAGE, "mdi:water-percent", SensorDeviceClass.HUMIDITY, None), # API Index 8
-    (8, "Poziom CO2", CONCENTRATION_PARTS_PER_MILLION, "mdi:molecule-co2", "carbon_dioxide", None), # API Index 9
-    (9, "Status harmonogramu", None, "mdi:calendar-clock", None, None), # API Index 10 (0/1)
-    (10, "Tryb pracy", None, "mdi:cog-outline", None, None), # API Index 11 (mapowane wartości)
-    (13, "Status grzanie/chłodzenie", None, "mdi:thermostat", None, None), # API Index 14 (0/1/2)
+    (3, "Aktualna wartość nawiewu", UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR, "mdi:fan", SensorDeviceClass.VOLUME_FLOW_RATE, None), # API Index 4
+    (4, "Aktualna wartość wyciągu", UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR, "mdi:fan-off", SensorDeviceClass.VOLUME_FLOW_RATE, None), # API Index 5
+    (5, "Nawiew tryb ręczny", UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR, "mdi:fan-settings", SensorDeviceClass.VOLUME_FLOW_RATE, None), # API Index 6
+    (6, "Wyciąg tryb ręczny", UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR, "mdi:fan-settings", SensorDeviceClass.VOLUME_FLOW_RATE, None), # API Index 7
+    (7, "Wilgotność", UnitOfRatio.PERCENTAGE, "mdi:water-percent", SensorDeviceClass.HUMIDITY, None), # API Index 8
+    (8, "Poziom CO2", UnitOfRatio.PARTS_PER_MILLION, "mdi:molecule-co2", SensorDeviceClass.CO2, None), # API Index 9
+    (9, "Status harmonogramu", None, "mdi:calendar-clock", SensorDeviceClass.ENUM, None), # API Index 10 (0/1)
+    (10, "Tryb pracy", None, "mdi:cog-outline", SensorDeviceClass.ENUM, None), # API Index 11 (mapowane wartości)
+    (13, "Status grzanie/chłodzenie", None, "mdi:thermostat", SensorDeviceClass.ENUM, None), # API Index 14 (0/1/2)
     (15, "Model urządzenia", None, "mdi:information-outline", None, EntityCategory.DIAGNOSTIC), # API Index 16
 
     # --- Temperatury szczegółowe ---
@@ -61,20 +59,20 @@ SENSOR_DEFINITIONS: list[tuple[int, str, str | None, str | None, SensorDeviceCla
     (76, "Ciśnienie wyciąg", UnitOfPressure.PA, "mdi:arrow-up-bold-pressure-outline", SensorDeviceClass.PRESSURE, None), # API Index 77 (zakładam Pa)
 
     # --- Statusy i inne ---
-    (39, "Status By-passu", None, "mdi:compare-horizontal", None, None), # API Index 40 (mapowane wartości)
+    (39, "Status By-passu", None, "mdi:compare-horizontal", SensorDeviceClass.ENUM, None), # API Index 40 (mapowane wartości)
     (40, "Kod błędu", None, "mdi:alert-circle-outline", None, EntityCategory.DIAGNOSTIC), # API Index 41
     (41, "Kod komunikatu", None, "mdi:information-outline", None, EntityCategory.DIAGNOSTIC), # API Index 42
-    (71, "Detekcja wilgotności", None, "mdi:water-check-outline", None, None), # API Index 72 (0/1)
-    (72, "Status nagrzewnicy wstępnej", None, "mdi:radiator", None, None), # API Index 73 (0/1)
+    (71, "Detekcja wilgotności", None, "mdi:water-check-outline", SensorDeviceClass.ENUM, None), # API Index 72 (0/1)
+    (72, "Status nagrzewnicy wstępnej", None, "mdi:radiator", SensorDeviceClass.ENUM, None), # API Index 73 (0/1)
     (73, "Status systemu antyzamrożeniowego", None, "mdi:snowflake-melt", None, None), # API Index 74
     (74, "Status systemu przeciwwykropleniowego", None, "mdi:water-boiler-alert", None, None), # API Index 75
-    (83, "Dni do wymiany filtra", "dni", "mdi:air-filter", None, None), # API Index 84
-    (86, "Typ montażu", None, "mdi:tools", None, EntityCategory.DIAGNOSTIC), # API Index 87 (1-lewy, 2-prawy)
-    (92, "Współczynnik nadciśnienia", PERCENTAGE, "mdi:arrow-expand-all", None, None), # API Index 93
+    (83, "Dni do wymiany filtra", UnitOfTime.DAYS, "mdi:air-filter", SensorDeviceClass.DURATION, None), # API Index 84
+    (86, "Typ montażu", None, "mdi:tools", SensorDeviceClass.ENUM, EntityCategory.DIAGNOSTIC), # API Index 87 (1-lewy, 2-prawy)
+    (92, "Współczynnik nadciśnienia", UnitOfRatio.PERCENTAGE, "mdi:arrow-expand-all", None, None), # API Index 93
 
     # --- Wentylatory ---
-    (65, "Prędkość wentylatora nawiew", PERCENTAGE, "mdi:fan-chevron-up", None, None), # API Index 66
-    (66, "Prędkość wentylatora wyciąg", PERCENTAGE, "mdi:fan-chevron-down", None, None), # API Index 67
+    (65, "Prędkość wentylatora nawiew", UnitOfRatio.PERCENTAGE, "mdi:fan-chevron-up", None, None), # API Index 66
+    (66, "Prędkość wentylatora wyciąg", UnitOfRatio.PERCENTAGE, "mdi:fan-chevron-down", None, None), # API Index 67
     (81, "Moc wentylatora nawiewnego", UnitOfPower.WATT, "mdi:lightning-bolt", SensorDeviceClass.POWER, None), # API Index 82
     (82, "Moc wentylatora wywiewnego", UnitOfPower.WATT, "mdi:lightning-bolt", SensorDeviceClass.POWER, None), # API Index 83
 
@@ -89,21 +87,48 @@ SENSOR_DEFINITIONS: list[tuple[int, str, str | None, str | None, SensorDeviceCla
     (93, "Wersja firmware WiFi", None, "mdi:wifi", None, EntityCategory.DIAGNOSTIC), # API Index 94
 
     # --- Współczynniki wydajności dla funkcji (opcjonalne) ---
-    # (16, "Wydajność Szybkie grzanie", PERCENTAGE, "mdi:fire", None, None), # API Index 17
-    # (17, "Wydajność Szybkie chłodzenie", PERCENTAGE, "mdi:snowflake", None, None), # API Index 18
-    # (18, "Wydajność Urlop", PERCENTAGE, "mdi:palm-tree", None, None), # API Index 19
-    # (19, "Wydajność Przewietrzanie", PERCENTAGE, "mdi:weather-windy", None, None), # API Index 20
-    # (20, "Wydajność Oczyszczanie", PERCENTAGE, "mdi:air-purifier", None, None), # API Index 21
-    # (21, "Wydajność Kominek", PERCENTAGE, "mdi:fireplace", None, None), # API Index 22
+    # (16, "Wydajność Szybkie grzanie", UnitOfRatio.PERCENTAGE, "mdi:fire", None, None), # API Index 17
+    # (17, "Wydajność Szybkie chłodzenie", UnitOfRatio.PERCENTAGE, "mdi:snowflake", None, None), # API Index 18
+    # (18, "Wydajność Urlop", UnitOfRatio.PERCENTAGE, "mdi:palm-tree", None, None), # API Index 19
+    # (19, "Wydajność Przewietrzanie", UnitOfRatio.PERCENTAGE, "mdi:weather-windy", None, None), # API Index 20
+    # (20, "Wydajność Oczyszczanie", UnitOfRatio.PERCENTAGE, "mdi:air-purifier", None, None), # API Index 21
+    # (21, "Wydajność Kominek", UnitOfRatio.PERCENTAGE, "mdi:fireplace", None, None), # API Index 22
 ]
 
+SENSOR_OPTIONS: dict[int, list[str]] = {
+    0: ["Włączone", "Wyłączone"],
+    9: ["Aktywny", "Nieaktywny"],
+    10: [
+        "Szybkie grzanie",
+        "Szybkie chłodzenie",
+        "Urlop",
+        "Przewietrzanie",
+        "Oczyszczanie",
+        "Kominek",
+        "Tryb ręczny",
+        "Tryb inteligentny",
+        "Tryb pomiaru wydajności",
+    ],
+    13: ["Nieaktywna", "Grzanie", "Chłodzenie"],
+    39: [
+        "Zamknięty (ręcznie)",
+        "Otwarty (ręcznie)",
+        "Zamknięty (auto)",
+        "Otwarty (auto)",
+    ],
+    71: ["Aktywna", "Nieaktywna"],
+    72: ["Aktywna", "Nieaktywna"],
+    86: ["Lewy", "Prawy"],
+}
+
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    _hass: HomeAssistant,
+    config_entry: ConfigEntry[ReqnetDataCoordinator],
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Reqnet sensor platform."""
-    coordinator: ReqnetDataCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    del _hass
+    coordinator = config_entry.runtime_data
 
     entities_to_add = []
     for index, name_suffix, unit, icon, dev_class, entity_cat in SENSOR_DEFINITIONS:
@@ -116,6 +141,7 @@ async def async_setup_entry(
                 icon=icon,
                 device_class=dev_class,
                 entity_category=entity_cat,
+                options=SENSOR_OPTIONS.get(index),
             )
         )
     async_add_entities(entities_to_add)
@@ -134,6 +160,7 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
         icon: str | None,
         device_class: SensorDeviceClass | None = None,
         entity_category: EntityCategory | None = None, # POPRAWIONE TYPOWANIE
+        options: list[str] | None = None,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
@@ -147,7 +174,13 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
             icon=icon,
             native_unit_of_measurement=unit,
             device_class=device_class,
+            state_class=(
+                SensorStateClass.MEASUREMENT
+                if device_class not in (None, SensorDeviceClass.ENUM)
+                else None
+            ),
             entity_category=entity_category, # Tutaj zostanie przekazana poprawna instancja EntityCategory lub None
+            options=options,
         )
 
         # Unikalne ID dla encji
@@ -187,11 +220,11 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
         # Mapowanie wartości dla specyficznych sensorów
         # API Index 1 (Python index 0): Status urządzenia
         if self._index == 0:
-            return "Włączone" if value == 1 else "Wyłączone"
+            return {0: "Wyłączone", 1: "Włączone"}.get(value)
         
         # API Index 10 (Python index 9): Status harmonogramu
         if self._index == 9:
-            return "Aktywny" if value == 1 else "Nieaktywny"
+            return {0: "Nieaktywny", 1: "Aktywny"}.get(value)
 
         # API Index 11 (Python index 10): Tryb pracy
         if self._index == 10:
@@ -200,12 +233,12 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
                 4: "Przewietrzanie", 5: "Oczyszczanie", 6: "Kominek",
                 8: "Tryb ręczny", 9: "Tryb inteligentny", 10: "Tryb pomiaru wydajności",
             }
-            return modes.get(value, f"Nieznany tryb ({value})")
+            return modes.get(value)
 
         # API Index 14 (Python index 13): Status funkcji równoległej (grzanie/chłodzenie)
         if self._index == 13:
             statuses = {0: "Nieaktywna", 1: "Grzanie", 2: "Chłodzenie"}
-            return statuses.get(value, f"Nieznany status ({value})")
+            return statuses.get(value)
 
         # API Index 40 (Python index 39): Wartość ByPassu
         if self._index == 39:
@@ -213,19 +246,19 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
                 0: "Zamknięty (ręcznie)", 1: "Otwarty (ręcznie)",
                 2: "Zamknięty (auto)", 3: "Otwarty (auto)",
             }
-            return bypass_status.get(value, f"Nieznany status ({value})")
+            return bypass_status.get(value)
 
         # API Index 72 (Python index 71): Detekcja wilgotności
         if self._index == 71:
-            return "Aktywna" if value == 1 else "Nieaktywna"
+            return {0: "Nieaktywna", 1: "Aktywna"}.get(value)
 
         # API Index 73 (Python index 72): Status nagrzewnicy wstępnej
         if self._index == 72:
-            return "Aktywna" if value == 1 else "Nieaktywna"
+            return {0: "Nieaktywna", 1: "Aktywna"}.get(value)
 
         # API Index 87 (Python index 86): Typ montażu
         if self._index == 86:
             types = {1: "Lewy", 2: "Prawy"}
-            return types.get(value, f"Nieznany ({value})")
+            return types.get(value)
 
         return value

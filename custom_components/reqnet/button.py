@@ -37,7 +37,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Konfiguracja platformy przycisków Reqnet."""
-    coordinator: ReqnetDataCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: ReqnetDataCoordinator = config_entry.runtime_data
 
     buttons = []
     for description in BUTTON_DESCRIPTIONS:

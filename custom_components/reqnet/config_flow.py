@@ -2,12 +2,12 @@
 import logging
 import json
 
+import aiohttp
 import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_MAC
-from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession # ZMIENIONY IMPORT!
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN, API_PATH_API
 
@@ -22,7 +22,6 @@ class ReqnetConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Reqnet Recuperator."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -54,24 +53,15 @@ class ReqnetConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     mac_address = api_data["MAC"]
                     _LOGGER.info(f"Successfully discovered MAC address: {mac_address} for host: {host}")
 
-            except Exception as e: # Zmieniono na ogólny Exception na potrzeby diagnostyki
-                response_text = "N/A"
-                if 'response' in locals() and hasattr(response, 'text'):
-                    try:
-                        response_text = await response.text() # Spróbuj pobrać tekst odpowiedzi
-                    except Exception:
-                        response_text = "Could not retrieve response text"
-                
-                _LOGGER.exception(f"An error occurred during API call to {host}. Response: {response_text}. Error type: {type(e).__name__}, Message: {e}")
-                
-                if isinstance(e, (TimeoutError, httpx.ConnectError)): # Uwaga: httpx.ConnectError może nadal być rzucony, jeśli jest w buforze
-                    errors["base"] = "cannot_connect"
-                elif isinstance(e, json.JSONDecodeError):
-                    errors["base"] = "invalid_json"
-                elif isinstance(e, httpx.RequestError): # Uwaga: httpx.RequestError może nadal być rzucony
-                     errors["base"] = "http_error"
-                else:
-                    errors["base"] = "unknown"
+            except (TimeoutError, aiohttp.ClientError):
+                _LOGGER.exception("An error occurred during API call to %s", host)
+                errors["base"] = "cannot_connect"
+            except json.JSONDecodeError:
+                _LOGGER.exception("Invalid JSON response from %s", host)
+                errors["base"] = "invalid_json"
+            except Exception:
+                _LOGGER.exception("Unexpected error during API call to %s", host)
+                errors["base"] = "unknown"
 
             if not errors and mac_address:
                 unique_id = mac_address.replace(":", "").lower()
@@ -90,7 +80,3 @@ class ReqnetConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
 
-    @callback
-    def _async_current_entries(self):
-        """Return current entries."""
-        return self._async_get_current_entries(include_ignore=False)
