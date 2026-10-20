@@ -19,13 +19,19 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
+PLATFORMS = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.SWITCH,
+    Platform.NUMBER,
+]
 
 # Definicja schematu dla serwisu
 SERVICE_SET_MANUAL_MODE_SCHEMA = vol.Schema({
     vol.Required("device_id"): cv.string,
-    vol.Required("airflow_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
-    vol.Required("air_extraction_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
+    vol.Required("airflow_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=350)),
+    vol.Required("air_extraction_value"): vol.All(vol.Coerce(int), vol.Range(min=0, max=350)),
 })
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

@@ -159,7 +159,11 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
             _LOGGER.exception(f"Błąd podczas wysyłania polecenia AutomaticMode przez MQTT: {e}")
             return False
 
-    async def async_set_manual_mode(self, airflow_value: int = None, air_extraction_value: int = None) -> bool:
+    async def async_set_manual_mode(
+        self,
+        airflow_value: int | None = None,
+        air_extraction_value: int | None = None,
+    ) -> bool:
         """Ustawia tryb ręczny z zadanymi wartościami nawiewu i wyciągu."""
         _LOGGER.info(f"Wysyłanie polecenia ManualMode na temat MQTT: {self.command_mm_topic}")
         
@@ -169,17 +173,21 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
                 # Użyj aktualnych wartości z API Index 6 i 7 (Python index 5 i 6)
                 current_airflow = self.data[5] if self.data[5] is not None else 200
                 current_extraction = self.data[6] if self.data[6] is not None else 200
-                airflow_value = airflow_value or current_airflow
-                air_extraction_value = air_extraction_value or current_extraction
+                if airflow_value is None:
+                    airflow_value = current_airflow
+                if air_extraction_value is None:
+                    air_extraction_value = current_extraction
             else:
                 # Wartości domyślne jeśli brak danych
-                airflow_value = airflow_value or 200
-                air_extraction_value = air_extraction_value or 200
+                if airflow_value is None:
+                    airflow_value = 200
+                if air_extraction_value is None:
+                    air_extraction_value = 200
         
         # Przygotuj payload JSON z parametrami
         payload = {
-            "AirflowValue": airflow_value,
-            "ValueOfAirExtraction": air_extraction_value
+            "airflowvalue": airflow_value,
+            "valueofairextraction": air_extraction_value,
         }
         
         try:
