@@ -33,13 +33,11 @@ async def async_setup_entry(
                 coordinator,
                 index=MANUAL_AIRFLOW_INDEX,
                 key="manual_airflow",
-                name="Zadany nawiew",
             ),
             ReqnetManualFlowNumber(
                 coordinator,
                 index=MANUAL_EXTRACTION_INDEX,
                 key="manual_extraction",
-                name="Zadany wyciąg",
             ),
         ]
     )
@@ -64,13 +62,12 @@ class ReqnetManualFlowNumber(
         *,
         index: int,
         key: str,
-        name: str,
     ) -> None:
         """Initialize the manual airflow number."""
         super().__init__(coordinator)
         self._index = index
         self._attr_unique_id = f"{coordinator.mac_address.lower()}_{key}"
-        self._attr_name = name
+        self._attr_translation_key = key
         self._attr_device_info = coordinator.device_info
 
     @property

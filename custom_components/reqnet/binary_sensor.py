@@ -4,6 +4,7 @@ from __future__ import annotations
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
+    BinarySensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -23,7 +24,18 @@ async def async_setup_entry(
 
     binary_sensors = [
         # Indeks 0: Status urządzenia (1 - włączone, 0 - wyłączone)
-        ReqnetBinarySensor(coordinator, 0, "Rekuperator - Status urządzenia", "mdi:power", "mdi:power-off"),
+        ReqnetBinarySensor(
+            coordinator,
+            0,
+            BinarySensorEntityDescription(
+                key="device_status",
+                translation_key="device_status",
+                icon="mdi:power",
+            ),
+            "Rekuperator - Status urządzenia",
+            "mdi:power",
+            "mdi:power-off",
+        ),
     ]
 
     async_add_entities(binary_sensors)
@@ -39,19 +51,19 @@ class ReqnetBinarySensor(
         self,
         coordinator: ReqnetDataCoordinator,
         index: int,
-        name: str,
+        entity_description: BinarySensorEntityDescription,
+        legacy_name: str,
         on_icon: str | None,
         off_icon: str | None,
     ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
+        self.entity_description = entity_description
         self._index = index
-        self._name = name
         self._on_icon = on_icon
         self._off_icon = off_icon
 
-        self._attr_unique_id = f"{coordinator.mac_address.replace(':', '').lower()}_{name.lower().replace(' ', '_')}"
-        self._attr_name = name
+        self._attr_unique_id = f"{coordinator.mac_address.replace(':', '').lower()}_{legacy_name.lower().replace(' ', '_')}"
         self._attr_device_info = coordinator.device_info
 
     @property

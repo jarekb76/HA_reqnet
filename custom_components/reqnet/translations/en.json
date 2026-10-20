@@ -1,0 +1,153 @@
+{
+  "config": {
+    "error": {
+      "cannot_connect": "Unable to connect to the device. Please check the host and try again.",
+      "invalid_json": "Invalid response from device (invalid JSON).",
+      "invalid_response": "Unexpected response structure from device.",
+      "http_error": "HTTP error occurred while communicating with the device.",
+      "unknown": "An unexpected error occurred."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "device_status": {
+        "name": "Device status",
+        "state": {
+          "on": "On",
+          "off": "Off"
+        }
+      },
+      "max_supply_flow": { "name": "Maximum supply flow" },
+      "current_temperature": { "name": "Supply temperature" },
+      "current_supply_flow": { "name": "Current supply flow" },
+      "current_extraction_flow": { "name": "Current extraction flow" },
+      "supply_manual_mode": { "name": "Supply manual mode" },
+      "extraction_manual_mode": { "name": "Extraction manual mode" },
+      "humidity": { "name": "Air humidity" },
+      "co2_level": { "name": "CO₂ level" },
+      "schedule_status": {
+        "name": "Schedule status",
+        "state": {
+          "active": "Active",
+          "inactive": "Inactive"
+        }
+      },
+      "operation_mode": {
+        "name": "Operation mode",
+        "state": {
+          "fast_heating": "Fast heating",
+          "fast_cooling": "Fast cooling",
+          "vacation": "Holiday",
+          "ventilation": "Ventilation",
+          "purification": "Cleansing",
+          "fireplace": "Fireplace",
+          "manual_mode": "Manual mode",
+          "intelligent_mode": "Intelligent mode",
+          "efficiency_measurement_mode": "Efficiency measurement mode",
+          "unknown_mode": "Unknown mode ({value})"
+        }
+      },
+      "heating_cooling_status": {
+        "name": "Heating/cooling status",
+        "state": {
+          "inactive": "Inactive",
+          "heating": "Heating",
+          "cooling": "Cooling",
+          "unknown_status": "Unknown status ({value})"
+        }
+      },
+      "device_model": { "name": "Device model" },
+      "intake_temperature": { "name": "Outdoor" },
+      "exhaust_duct_temperature": { "name": "Exhaust" },
+      "supply_temperature": { "name": "Supply" },
+      "extraction_temperature": { "name": "Indoor" },
+      "temperature_after_heater_cooler": { "name": "Temperature after heater/cooler" },
+      "gwc_temperature": { "name": "Ground heat exchanger temperature" },
+      "room_temperature": { "name": "Room temperature" },
+      "additional_sensor_temperature": { "name": "Additional sensor temperature" },
+      "supply_duct_resistance": { "name": "Supply duct resistance" },
+      "extraction_duct_resistance": { "name": "Extraction duct resistance" },
+      "supply_pressure": { "name": "Supply pressure" },
+      "extraction_pressure": { "name": "Extraction pressure" },
+      "bypass_status": {
+        "name": "Bypass status",
+        "state": {
+          "closed_manual": "Closed (manual)",
+          "open_manual": "Open (manual)",
+          "closed_auto": "Closed (auto)",
+          "open_auto": "Open (auto)",
+          "unknown_status": "Unknown status ({value})"
+        }
+      },
+      "error_code": { "name": "Error code" },
+      "message_code": { "name": "Message code" },
+      "humidity_detection": {
+        "name": "Humidity detection",
+        "state": {
+          "active": "Active",
+          "inactive": "Inactive"
+        }
+      },
+      "preheater_status": {
+        "name": "Preheater status",
+        "state": {
+          "active": "Active",
+          "inactive": "Inactive"
+        }
+      },
+      "antifreeze_system_status": { "name": "Antifreeze system status" },
+      "condensation_system_status": { "name": "Condensation system status" },
+      "filter_days_until_replacement": { "name": "Days until filter replacement" },
+      "mount_type": {
+        "name": "Mount type",
+        "state": {
+          "left": "Left",
+          "right": "Right",
+          "unknown": "Unknown ({value})"
+        }
+      },
+      "overpressure_coefficient": { "name": "Overpressure coefficient" },
+      "supply_fan_speed": { "name": "Supply fan speed" },
+      "extraction_fan_speed": { "name": "Extraction fan speed" },
+      "supply_fan_power": { "name": "Supply fan power" },
+      "extraction_fan_power": { "name": "Extraction fan power" },
+      "comfort_temperature_setpoint": { "name": "Comfort temperature setpoint" },
+      "co2_sensitivity": { "name": "CO₂ sensitivity" },
+      "higro_sensitivity": { "name": "HIGRO sensitivity" },
+      "firmware_version_major": { "name": "Firmware version (major)" },
+      "firmware_version_build": { "name": "Firmware version (build)" },
+      "firmware_version_wifi": { "name": "WiFi firmware version" }
+    },
+    "number": {
+      "manual_airflow": { "name": "Manual supply airflow" },
+      "manual_extraction": { "name": "Manual extraction airflow" }
+    },
+    "button": {
+      "automatic_mode": { "name": "Enable intelligent mode" },
+      "manual_mode": { "name": "Enable manual mode" }
+    },
+    "binary_sensor": {
+      "device_status": { "name": "Recuperator - Device status" }
+    }
+  },
+  "services": {
+    "set_manual_mode": {
+      "name": "Set manual mode",
+      "description": "Sets manual mode with specified supply and extraction values",
+      "fields": {
+        "device_id": {
+          "name": "Device ID",
+          "description": "Reqnet device ID (MAC address)"
+        },
+        "airflow_value": {
+          "name": "Supply value",
+          "description": "Desired supply value (m³/h)"
+        },
+        "air_extraction_value": {
+          "name": "Extraction value",
+          "description": "Desired extraction value (m³/h)"
+        }
+      }
+    }
+  }
+}

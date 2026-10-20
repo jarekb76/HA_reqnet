@@ -21,12 +21,12 @@ _LOGGER = logging.getLogger(__name__)
 BUTTON_DESCRIPTIONS = [
     ButtonEntityDescription(
         key="automatic_mode",
-        name="Reqnet Włącz tryb inteligentny",
+        translation_key="automatic_mode",
         icon="mdi:brain",
     ),
     ButtonEntityDescription(
         key="manual_mode",
-        name="Reqnet Włącz tryb ręczny",
+        translation_key="manual_mode",
         icon="mdi:hand-back-right",
     ),
 ]

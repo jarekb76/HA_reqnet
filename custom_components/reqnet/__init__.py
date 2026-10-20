@@ -6,6 +6,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.const import CONF_MAC, CONF_HOST, Platform
 import homeassistant.helpers.config_validation as cv
@@ -23,7 +24,6 @@ PLATFORMS = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
-    Platform.SWITCH,
     Platform.NUMBER,
 ]
 
@@ -61,6 +61,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Failed to connect to Reqnet device: {ex}") from ex
 
     entry.runtime_data = coordinator
+
+    entity_registry = er.async_get(hass)
+    mode_switch_entity_id = entity_registry.async_get_entity_id(
+        Platform.SWITCH,
+        DOMAIN,
+        f"{coordinator.mac_address.lower()}_mode",
+    )
+    if mode_switch_entity_id is not None:
+        entity_registry.async_remove(mode_switch_entity_id)
 
     _LOGGER.info("INIT.PY: Przed wywołaniem async_forward_entry_setups dla platform: %s", PLATFORMS)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

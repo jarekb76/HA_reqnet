@@ -1,0 +1,153 @@
+{
+  "config": {
+    "error": {
+      "cannot_connect": "Nie można połączyć z urządzeniem. Sprawdź host i spróbuj ponownie.",
+      "invalid_json": "Nieprawidłowa odpowiedź z urządzenia (nieprawidłowy JSON).",
+      "invalid_response": "Nieoczekiwana struktura odpowiedzi z urządzenia.",
+      "http_error": "Wystąpił błąd HTTP podczas komunikacji z urządzeniem.",
+      "unknown": "Wystąpił nieoczekiwany błąd."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "device_status": {
+        "name": "Status urządzenia",
+        "state": {
+          "on": "Włączone",
+          "off": "Wyłączone"
+        }
+      },
+      "max_supply_flow": { "name": "Maksymalna wartość nawiewu" },
+      "current_temperature": { "name": "Aktualna temperatura" },
+      "current_supply_flow": { "name": "Aktualna wartość nawiewu" },
+      "current_extraction_flow": { "name": "Aktualna wartość wyciągu" },
+      "supply_manual_mode": { "name": "Nawiew tryb ręczny" },
+      "extraction_manual_mode": { "name": "Wyciąg tryb ręczny" },
+      "humidity": { "name": "Wilgotność" },
+      "co2_level": { "name": "Poziom CO2" },
+      "schedule_status": {
+        "name": "Status harmonogramu",
+        "state": {
+          "active": "Aktywny",
+          "inactive": "Nieaktywny"
+        }
+      },
+      "operation_mode": {
+        "name": "Tryb pracy",
+        "state": {
+          "fast_heating": "Szybkie grzanie",
+          "fast_cooling": "Szybkie chłodzenie",
+          "vacation": "Urlop",
+          "ventilation": "Przewietrzanie",
+          "purification": "Oczyszczanie",
+          "fireplace": "Kominek",
+          "manual_mode": "Tryb ręczny",
+          "intelligent_mode": "Tryb inteligentny",
+          "efficiency_measurement_mode": "Tryb pomiaru wydajności",
+          "unknown_mode": "Nieznany tryb ({value})"
+        }
+      },
+      "heating_cooling_status": {
+        "name": "Status grzanie/chłodzenie",
+        "state": {
+          "inactive": "Nieaktywna",
+          "heating": "Grzanie",
+          "cooling": "Chłodzenie",
+          "unknown_status": "Nieznany status ({value})"
+        }
+      },
+      "device_model": { "name": "Model urządzenia" },
+      "intake_temperature": { "name": "Temperatura na czerpni" },
+      "exhaust_duct_temperature": { "name": "Temperatura na wyrzutni" },
+      "supply_temperature": { "name": "Temperatura nawiewu" },
+      "extraction_temperature": { "name": "Temperatura wyciągu" },
+      "temperature_after_heater_cooler": { "name": "Temperatura za nagrzewnicą/chłodnicą" },
+      "gwc_temperature": { "name": "Temperatura GWC" },
+      "room_temperature": { "name": "Temperatura w pomieszczeniu" },
+      "additional_sensor_temperature": { "name": "Temperatura dodatkowego czujnika" },
+      "supply_duct_resistance": { "name": "Opór ciągu nawiewnego" },
+      "extraction_duct_resistance": { "name": "Opór ciągu wywiewnego" },
+      "supply_pressure": { "name": "Ciśnienie nawiew" },
+      "extraction_pressure": { "name": "Ciśnienie wyciąg" },
+      "bypass_status": {
+        "name": "Status By-passu",
+        "state": {
+          "closed_manual": "Zamknięty (ręcznie)",
+          "open_manual": "Otwarty (ręcznie)",
+          "closed_auto": "Zamknięty (auto)",
+          "open_auto": "Otwarty (auto)",
+          "unknown_status": "Nieznany status ({value})"
+        }
+      },
+      "error_code": { "name": "Kod błędu" },
+      "message_code": { "name": "Kod komunikatu" },
+      "humidity_detection": {
+        "name": "Detekcja wilgotności",
+        "state": {
+          "active": "Aktywna",
+          "inactive": "Nieaktywna"
+        }
+      },
+      "preheater_status": {
+        "name": "Status nagrzewnicy wstępnej",
+        "state": {
+          "active": "Aktywna",
+          "inactive": "Nieaktywna"
+        }
+      },
+      "antifreeze_system_status": { "name": "Status systemu antyzamrożeniowego" },
+      "condensation_system_status": { "name": "Status systemu przeciwwykropleniowego" },
+      "filter_days_until_replacement": { "name": "Dni do wymiany filtra" },
+      "mount_type": {
+        "name": "Typ montażu",
+        "state": {
+          "left": "Lewy",
+          "right": "Prawy",
+          "unknown": "Nieznany ({value})"
+        }
+      },
+      "overpressure_coefficient": { "name": "Współczynnik nadciśnienia" },
+      "supply_fan_speed": { "name": "Prędkość wentylatora nawiew" },
+      "extraction_fan_speed": { "name": "Prędkość wentylatora wyciąg" },
+      "supply_fan_power": { "name": "Moc wentylatora nawiewnego" },
+      "extraction_fan_power": { "name": "Moc wentylatora wywiewnego" },
+      "comfort_temperature_setpoint": { "name": "Ustawiona temperatura komfortu" },
+      "co2_sensitivity": { "name": "Aktualna czułość CO2" },
+      "higro_sensitivity": { "name": "Aktualna czułość HIGRO" },
+      "firmware_version_major": { "name": "Wersja firmware (major)" },
+      "firmware_version_build": { "name": "Wersja firmware (build)" },
+      "firmware_version_wifi": { "name": "Wersja firmware WiFi" }
+    },
+    "number": {
+      "manual_airflow": { "name": "Zadany nawiew" },
+      "manual_extraction": { "name": "Zadany wyciąg" }
+    },
+    "button": {
+      "automatic_mode": { "name": "Reqnet Włącz tryb inteligentny" },
+      "manual_mode": { "name": "Reqnet Włącz tryb ręczny" }
+    },
+    "binary_sensor": {
+      "device_status": { "name": "Rekuperator - Status urządzenia" }
+    }
+  },
+  "services": {
+    "set_manual_mode": {
+      "name": "Ustaw tryb ręczny",
+      "description": "Ustawia tryb ręczny z określonymi wartościami nawiewu i wyciągu",
+      "fields": {
+        "device_id": {
+          "name": "ID urządzenia",
+          "description": "ID urządzenia Reqnet (MAC address)"
+        },
+        "airflow_value": {
+          "name": "Wartość nawiewu",
+          "description": "Zadana wartość nawiewu (m³/h)"
+        },
+        "air_extraction_value": {
+          "name": "Wartość wyciągu",
+          "description": "Zadana wartość wyciągu (m³/h)"
+        }
+      }
+    }
+  }
+}
