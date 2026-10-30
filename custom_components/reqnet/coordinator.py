@@ -39,10 +39,22 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
         self.command_mm_topic = f"{self.mac_for_mqtt_topics}/ManualMode"
         self.response_mm_topic = f"{self.mac_for_mqtt_topics}/ManualModeResult"
 
+        # Tematy dla trybu bypassu
+        self.command_bypass_topic = f"{self.mac_for_mqtt_topics}/SetByPassMode"
+        self.response_bypass_topic = f"{self.mac_for_mqtt_topics}/SetByPassModeResult"
+
+        self.simple_command_results = {
+            f"{self.mac_for_mqtt_topics}/TurnOnResult": "TurnOnResult",
+            f"{self.mac_for_mqtt_topics}/TurnOffResult": "TurnOffResult",
+            f"{self.mac_for_mqtt_topics}/ReplaceFiltersResult": "ReplaceFiltersResult",
+        }
+        self._unsub_simple_command_results = {}
+
         self.data = None 
         self._unsub_cwp = None
         self._unsub_am_result = None
         self._unsub_mm_result = None
+        self._unsub_bypass_result = None
 
         super().__init__(
             hass,
@@ -91,6 +103,26 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
                     _LOGGER.info(f"Potwierdzenie ({self.response_mm_topic}): Tryb ręczny włączony. Wiadomość: {data.get('Message', '')}")
                 else:
                     _LOGGER.warning(f"Potwierdzenie ({self.response_mm_topic}): Nie udało się włączyć trybu ręcznego. Wiadomość: {data.get('Message', 'Brak wiadomości')}")
+
+            elif msg.topic == self.response_bypass_topic:
+                if data.get("SetByPassModeResult") is True:
+                    _LOGGER.info("Potwierdzenie: ustawiono tryb bypassu.")
+                else:
+                    _LOGGER.warning(
+                        "Nie udało się ustawić trybu bypassu: %s",
+                        data.get("Message", "Brak wiadomości"),
+                    )
+
+            elif msg.topic in self.simple_command_results:
+                result_key = self.simple_command_results[msg.topic]
+                if data.get(result_key) is True:
+                    _LOGGER.info("Potwierdzenie wykonania %s", result_key)
+                else:
+                    _LOGGER.warning(
+                        "Nie udało się wykonać %s: %s",
+                        result_key,
+                        data.get("Message", "Brak wiadomości"),
+                    )
                     
             else:
                 _LOGGER.warning(f"Otrzymano wiadomość na nieobsługiwanym temacie MQTT: {msg.topic}")
@@ -137,6 +169,43 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug(f"Zasubskrybowano temat MM result: {self.response_mm_topic}")
             except Exception as e:
                 _LOGGER.warning(f"Nie udało się zasubskrybować tematu {self.response_mm_topic}: {e}")
+
+        if not self._unsub_bypass_result:
+            try:
+                self._unsub_bypass_result = await mqtt.async_subscribe(
+                    self.hass,
+                    self.response_bypass_topic,
+                    self._handle_mqtt_message,
+                    qos=0,
+                )
+                _LOGGER.debug(
+                    "Zasubskrybowano temat bypass result: %s",
+                    self.response_bypass_topic,
+                )
+            except Exception as e:
+                _LOGGER.warning(
+                    "Nie udało się zasubskrybować tematu %s: %s",
+                    self.response_bypass_topic,
+                    e,
+                )
+
+        for response_topic in self.simple_command_results:
+            if response_topic not in self._unsub_simple_command_results:
+                try:
+                    self._unsub_simple_command_results[response_topic] = (
+                        await mqtt.async_subscribe(
+                            self.hass,
+                            response_topic,
+                            self._handle_mqtt_message,
+                            qos=0,
+                        )
+                    )
+                except Exception as e:
+                    _LOGGER.warning(
+                        "Nie udało się zasubskrybować tematu %s: %s",
+                        response_topic,
+                        e,
+                    )
         
         try:
             await mqtt.async_publish(self.hass, self.request_cwp_topic, "", qos=0, retain=False)
@@ -203,6 +272,45 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
             _LOGGER.exception(f"Błąd podczas wysyłania polecenia ManualMode przez MQTT: {e}")
             return False
 
+    async def async_set_bypass_mode(self, mode: int) -> bool:
+        """Set bypass mode: closed (0), open (1), or automatic (2)."""
+        payload = json.dumps({"mode": mode})
+        try:
+            await mqtt.async_publish(
+                self.hass,
+                self.command_bypass_topic,
+                payload,
+                qos=0,
+                retain=False,
+            )
+            await asyncio.sleep(1)
+            await self.async_request_refresh()
+            return True
+        except Exception as e:
+            _LOGGER.exception("Błąd podczas ustawiania trybu bypassu: %s", e)
+            return False
+
+    async def async_set_device_power(self, is_on: bool) -> bool:
+        """Turn the recuperator on or off."""
+        method = "TurnOn" if is_on else "TurnOff"
+        return await self._async_publish_simple_command(method)
+
+    async def async_replace_filters(self) -> bool:
+        """Reset the filter counter after replacing filters."""
+        return await self._async_publish_simple_command("ReplaceFilters")
+
+    async def _async_publish_simple_command(self, method: str) -> bool:
+        """Publish a command that does not require a payload."""
+        topic = f"{self.mac_for_mqtt_topics}/{method}"
+        try:
+            await mqtt.async_publish(self.hass, topic, "", qos=0, retain=False)
+            await asyncio.sleep(1)
+            await self.async_request_refresh()
+            return True
+        except Exception as e:
+            _LOGGER.exception("Błąd podczas wysyłania polecenia %s: %s", topic, e)
+            return False
+
     async def async_shutdown(self):
         """Zamyka połączenia MQTT."""
         _LOGGER.debug("Anulowanie subskrypcji MQTT dla Reqnet.")
@@ -221,3 +329,16 @@ class ReqnetDataCoordinator(DataUpdateCoordinator):
             self._unsub_mm_result()
             self._unsub_mm_result = None
             _LOGGER.debug(f"Anulowano subskrypcję tematu: {self.response_mm_topic}")
+
+        if self._unsub_bypass_result:
+            self._unsub_bypass_result()
+            self._unsub_bypass_result = None
+            _LOGGER.debug(
+                "Anulowano subskrypcję tematu: %s",
+                self.response_bypass_topic,
+            )
+
+        for response_topic, unsubscribe in self._unsub_simple_command_results.items():
+            unsubscribe()
+            _LOGGER.debug("Anulowano subskrypcję tematu: %s", response_topic)
+        self._unsub_simple_command_results.clear()

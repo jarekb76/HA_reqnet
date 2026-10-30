@@ -111,6 +111,7 @@
       "extraction_fan_speed": { "name": "Extraction fan speed" },
       "supply_fan_power": { "name": "Supply fan power" },
       "extraction_fan_power": { "name": "Extraction fan power" },
+      "fan_energy": { "name": "Fan energy consumption" },
       "comfort_temperature_setpoint": { "name": "Comfort temperature setpoint" },
       "co2_sensitivity": { "name": "CO₂ sensitivity" },
       "higro_sensitivity": { "name": "HIGRO sensitivity" },
@@ -122,9 +123,28 @@
       "manual_airflow": { "name": "Manual supply airflow" },
       "manual_extraction": { "name": "Manual extraction airflow" }
     },
+    "switch": {
+      "device_power": { "name": "Power" }
+    },
     "button": {
-      "automatic_mode": { "name": "Enable intelligent mode" },
-      "manual_mode": { "name": "Enable manual mode" }
+      "replace_filters": { "name": "Filters replaced" }
+    },
+    "select": {
+      "bypass_mode": {
+        "name": "Bypass mode",
+        "state": {
+          "closed": "Closed",
+          "open": "Open",
+          "automatic": "Automatic"
+        }
+      },
+      "work_mode": {
+        "name": "Work mode",
+        "state": {
+          "intelligent": "Intelligent",
+          "manual": "Manual"
+        }
+      }
     },
     "binary_sensor": {
       "device_status": { "name": "Recuperator - Device status" }

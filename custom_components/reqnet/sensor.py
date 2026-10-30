@@ -1,11 +1,15 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
+import math
+from datetime import datetime, timezone
+
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
     SensorDeviceClass,
     SensorStateClass,
+    RestoreSensor,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -19,6 +23,7 @@ from homeassistant.const import (
     UnitOfPressure,
     UnitOfTime,
     UnitOfVolumeFlowRate,
+    UnitOfEnergy,
 )
 # Upewnij się, że DOMAIN i ReqnetDataCoordinator są poprawnie zdefiniowane/importowane
 from .const import DOMAIN # Zakładam, że DOMAIN jest zdefiniowany w .const
@@ -145,6 +150,7 @@ async def async_setup_entry(
                 options=SENSOR_OPTIONS.get(index),
             )
         )
+    entities_to_add.append(ReqnetFanEnergySensor(coordinator))
     async_add_entities(entities_to_add)
 
 
@@ -274,3 +280,81 @@ class ReqnetSensor(CoordinatorEntity[ReqnetDataCoordinator], SensorEntity):
             return "unknown"
 
         return value
+
+
+class ReqnetFanEnergySensor(
+    CoordinatorEntity[ReqnetDataCoordinator], RestoreSensor
+):
+    """Integrate fan power readings into cumulative energy consumption."""
+
+    _attr_has_entity_name = True
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_suggested_display_precision = 3
+
+    def __init__(
+        self,
+        coordinator: ReqnetDataCoordinator,
+    ) -> None:
+        super().__init__(coordinator)
+        self._attr_translation_key = "fan_energy"
+        self._attr_unique_id = f"{coordinator.mac_address.lower()}_fan_energy"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, coordinator.mac_address)},
+            "name": f"Reqnet Recuperator ({coordinator.mac_address})",
+            "manufacturer": "Reqnet",
+            "model": "Recuperator",
+        }
+        self._energy_kwh = 0.0
+        self._last_power_w: float | None = None
+        self._last_update: datetime | None = None
+
+    @property
+    def available(self) -> bool:
+        """Return whether the device is available."""
+        return self.coordinator.last_update_success
+
+    @property
+    def native_value(self) -> float:
+        """Return the accumulated energy in kWh."""
+        return round(self._energy_kwh, 6)
+
+    async def async_added_to_hass(self) -> None:
+        """Restore accumulated energy and start from the current power reading."""
+        await super().async_added_to_hass()
+        if (last_state := await self.async_get_last_state()) is not None:
+            try:
+                self._energy_kwh = max(0.0, float(last_state.state))
+            except ValueError:
+                pass
+        self._last_power_w = self._current_power_w()
+        self._last_update = datetime.now(timezone.utc)
+
+    def _current_power_w(self) -> float | None:
+        data = self.coordinator.data
+        if not isinstance(data, list) or len(data) <= 82:
+            return None
+        try:
+            fan_powers = (float(data[81]), float(data[82]))
+        except (TypeError, ValueError):
+            return None
+        if any(not math.isfinite(power) or power < 0 for power in fan_powers):
+            return None
+        return sum(fan_powers)
+
+    def _handle_coordinator_update(self) -> None:
+        """Accumulate energy between coordinator power readings."""
+        now = datetime.now(timezone.utc)
+        power_w = self._current_power_w()
+        if power_w is None:
+            self._last_power_w = None
+            self._last_update = now
+        else:
+            if self._last_power_w is not None and self._last_update is not None:
+                elapsed_seconds = max(0.0, (now - self._last_update).total_seconds())
+                average_power_w = (self._last_power_w + power_w) / 2
+                self._energy_kwh += average_power_w * elapsed_seconds / 3_600_000
+            self._last_power_w = power_w
+            self._last_update = now
+        super()._handle_coordinator_update()

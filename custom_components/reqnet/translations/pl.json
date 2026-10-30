@@ -33,7 +33,7 @@
         }
       },
       "operation_mode": {
-        "name": "Tryb pracy",
+        "name": "Aktualny tryb pracy",
         "state": {
           "fast_heating": "Szybkie grzanie",
           "fast_cooling": "Szybkie chłodzenie",
@@ -111,6 +111,7 @@
       "extraction_fan_speed": { "name": "Prędkość wentylatora wyciąg" },
       "supply_fan_power": { "name": "Moc wentylatora nawiewnego" },
       "extraction_fan_power": { "name": "Moc wentylatora wywiewnego" },
+      "fan_energy": { "name": "Zużycie energii wentylatorów" },
       "comfort_temperature_setpoint": { "name": "Ustawiona temperatura komfortu" },
       "co2_sensitivity": { "name": "Aktualna czułość CO2" },
       "higro_sensitivity": { "name": "Aktualna czułość HIGRO" },
@@ -122,9 +123,28 @@
       "manual_airflow": { "name": "Zadany nawiew" },
       "manual_extraction": { "name": "Zadany wyciąg" }
     },
+    "switch": {
+      "device_power": { "name": "Zasilanie" }
+    },
     "button": {
-      "automatic_mode": { "name": "Reqnet Włącz tryb inteligentny" },
-      "manual_mode": { "name": "Reqnet Włącz tryb ręczny" }
+      "replace_filters": { "name": "Wymieniono filtry" }
+    },
+    "select": {
+      "bypass_mode": {
+        "name": "Tryb bypassu",
+        "state": {
+          "closed": "Zamknięty",
+          "open": "Otwarty",
+          "automatic": "Automatyczny"
+        }
+      },
+      "work_mode": {
+        "name": "Tryb pracy",
+        "state": {
+          "intelligent": "Inteligentny",
+          "manual": "Manualny"
+        }
+      }
     },
     "binary_sensor": {
       "device_status": { "name": "Rekuperator - Status urządzenia" }

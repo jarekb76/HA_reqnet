@@ -23,6 +23,8 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
+    Platform.SWITCH,
+    Platform.SELECT,
     Platform.BUTTON,
     Platform.NUMBER,
 ]
@@ -70,6 +72,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     if mode_switch_entity_id is not None:
         entity_registry.async_remove(mode_switch_entity_id)
+
+    for mode_button in ("automatic_mode", "manual_mode"):
+        mode_button_entity_id = entity_registry.async_get_entity_id(
+            Platform.BUTTON,
+            DOMAIN,
+            f"{coordinator.mac_address.lower()}_{mode_button}",
+        )
+        if mode_button_entity_id is not None:
+            entity_registry.async_remove(mode_button_entity_id)
+
+    for old_energy_sensor in ("supply_fan_energy", "extraction_fan_energy"):
+        old_energy_entity_id = entity_registry.async_get_entity_id(
+            Platform.SENSOR,
+            DOMAIN,
+            f"{coordinator.mac_address.lower()}_{old_energy_sensor}",
+        )
+        if old_energy_entity_id is not None:
+            entity_registry.async_remove(old_energy_entity_id)
 
     _LOGGER.info("INIT.PY: Przed wywołaniem async_forward_entry_setups dla platform: %s", PLATFORMS)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
